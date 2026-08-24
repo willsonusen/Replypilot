@@ -1,0 +1,111 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <meta name="viewport" content="width=device-width,initial-scale=1">
+  <title>ReplyPilot</title>
+  <style>
+    body { font-family: system-ui, -apple-system, Segoe UI, Roboto, Arial; max-width:720px; margin:40px auto; padding:0 16px; color:#111 }
+    h1{display:flex;align-items:center;gap:12px}
+    textarea{width:100%;height:120px;padding:8px;font-size:14px}
+    .controls{display:flex;gap:8px;margin-top:8px}
+    button{padding:8px 12px;font-size:14px}
+    .results{margin-top:20px;display:grid;gap:12px}
+    .reply{border:1px solid #ddd;padding:12px;border-radius:6px;background:#fff}
+    .reply pre{white-space:pre-wrap;font-family:inherit;margin:0}
+    .reply .row{display:flex;justify-content:space-between;align-items:center;margin-bottom:8px}
+    .tone{font-weight:600;color:#333}
+  </style>
+</head>
+<body>
+  <h1>ReplyPilot</h1>
+  <p>Paste the message you received and click "Generate Reply" to get three professional reply options.</p>
+
+  <textarea id="source" placeholder="Paste the message here..."></textarea>
+  <div class="controls">
+    <button id="generate">Generate Reply</button>
+    <button id="clear">Clear</button>
+  </div>
+
+  <div class="results" id="results" aria-live="polite"></div>
+
+  <script>
+    function sanitize(s){ return String(s||"").trim(); }
+
+    function makeReplies(input){
+      // Simple templated reply generator producing 3 tones
+      const nameGuess = '';
+      const short = `Thanks for reaching out. ${input ? "I appreciate the update — I will review this and get back to you soon." : "I will follow up shortly."}`;
+      const formal = `Hello,
+
+Thank you for your message. ${input ? "I appreciate you sharing the details; I will review them and respond with any questions or next steps." : "I will respond as soon as I have an update."}
+
+Best regards,`;
+      const friendly = `Hi there,
+
+Thanks for sending this over! ${input ? "I'll take a look and get back to you with my thoughts soon." : "I'll be in touch shortly."}
+
+Cheers,`;
+
+      // If the user provided context, prepend a short acknowledgement of it
+      const contextAck = input ? `Regarding: "${input.length>120? input.slice(0,120)+"…" : input}"` : '';
+
+      return [
+        {tone:'Short', text: `${contextAck}${contextAck?"\n\n":""}${short}`},
+        {tone:'Formal', text: `${contextAck}${contextAck?"\n\n":""}${formal}`},
+        {tone:'Friendly', text: `${contextAck}${contextAck?"\n\n":""}${friendly}`}
+      ];
+    }
+
+    function copyText(text){
+      if(navigator.clipboard && navigator.clipboard.writeText){
+        return navigator.clipboard.writeText(text);
+      }
+      // Fallback
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      document.body.appendChild(ta);
+      ta.select();
+      try{ document.execCommand('copy'); }catch(e){}
+      document.body.removeChild(ta);
+      return Promise.resolve();
+    }
+
+    const genBtn = document.getElementById('generate');
+    const clearBtn = document.getElementById('clear');
+    const src = document.getElementById('source');
+    const results = document.getElementById('results');
+
+    genBtn.addEventListener('click', ()=>{
+      const input = sanitize(src.value);
+      if(!input){
+        alert('Please paste the message you received so ReplyPilot can generate replies.');
+        src.focus();
+        return;
+      }
+      results.innerHTML = '';
+      const replies = makeReplies(input);
+      replies.forEach(r=>{
+        const el = document.createElement('div');
+        el.className = 'reply';
+        el.innerHTML = `
+          <div class="row"><div class="tone">${r.tone}</div><div><button class="copy">Copy</button></div></div>
+          <pre>${escapeHtml(r.text)}</pre>
+        `;
+        const copyBtn = el.querySelector('.copy');
+        copyBtn.addEventListener('click', ()=>{
+          copyText(r.text).then(()=>{
+            copyBtn.textContent = 'Copied!';
+            setTimeout(()=>copyBtn.textContent = 'Copy',1200);
+          });
+        });
+        results.appendChild(el);
+      });
+    });
+
+    clearBtn.addEventListener('click', ()=>{ src.value=''; results.innerHTML=''; src.focus(); });
+
+    function escapeHtml(s){ return s.replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;'); }
+  </script>
+</body>
+</html>
