@@ -8,7 +8,7 @@ const app = express();
 app.use(cors({origin: '*'}));
 app.use(express.json());
 
-app.get('/', (req,res)=> res.send('ReplyPilot Backend Running - Set THREADS_TOKEN in env'));
+app.get('/', (req,res)=> res.send('ReplyPilot Backend is LIVE! API Ready'));
 
 app.get('/api/threads/:userId', async (req,res)=>{
   try{
