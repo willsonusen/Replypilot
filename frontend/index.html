@@ -1,0 +1,111 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>ReplyPilot - Threads Dashboard</title>
+<script src="https://cdn.tailwindcss.com"></script>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;700&display=swap" rel="stylesheet">
+<style>body{font-family:'Inter',sans-serif}</style>
+</head>
+<body class="bg-black text-white min-h-screen">
+<div class="max-w-6xl mx-auto p-4">
+  <header class="flex justify-between items-center py-4 border-b border-zinc-800">
+    <h1 class="text-xl font-bold">ReplyPilot <span class="text-zinc-500">for Threads</span></h1>
+    <div class="flex gap-2 items-center">
+      <span class="text-xs bg-green-900 text-green-300 px-2 py-1 rounded">● Connected @willyusen</span>
+      <button id="backendBtn" class="text-xs bg-white text-black px-3 py-1 rounded">Set Backend URL</button>
+    </div>
+  </header>
+
+  <div class="grid grid-cols-1 md:grid-cols-4 gap-4 mt-6">
+    <aside class="md:col-span-1 space-y-2">
+      <h2 class="text-xs text-zinc-500 uppercase">Inbox</h2>
+      <button onclick="filterType('ALL')" class="filter-btn w-full text-left px-3 py-2 bg-zinc-900 rounded text-sm">All Replies <span id="c-all" class="float-right text-zinc-500"></span></button>
+      <button onclick="filterType('QUESTION')" class="filter-btn w-full text-left px-3 py-2 hover:bg-zinc-900 rounded text-sm">Questions <span class="float-right">❓</span></button>
+      <button onclick="filterType('BUYER')" class="filter-btn w-full text-left px-3 py-2 hover:bg-zinc-900 rounded text-sm">Leads / Collabs 💰</button>
+      <button onclick="filterType('FAN')" class="filter-btn w-full text-left px-3 py-2 hover:bg-zinc-900 rounded text-sm">Fans ❤️</button>
+      <button onclick="filterType('SPAM')" class="filter-btn w-full text-left px-3 py-2 hover:bg-zinc-900 rounded text-sm text-red-400">Spam Hidden 🚫</button>
+      
+      <div class="mt-6 p-3 bg-zinc-900 rounded">
+        <h3 class="text-xs font-bold">Bouncer Today</h3>
+        <p class="text-2xl font-bold mt-2" id="bouncer-count">31</p>
+        <p class="text-xs text-zinc-400">spam hidden automatically</p>
+        <p class="text-xs mt-2 text-zinc-500">Top words: crypto, DM promo, OnlyFans</p>
+      </div>
+      <div class="mt-4 p-3 bg-zinc-900 rounded">
+        <h3 class="text-xs font-bold">Superfan Radar</h3>
+        <ul class="text-xs mt-2 space-y-1 text-zinc-300">
+          <li>@sarah.codes — 12 replies</li>
+          <li>@design_mike — 9 replies</li>
+          <li>@abuja_creator — 7 replies</li>
+        </ul>
+      </div>
+    </aside>
+
+    <main class="md:col-span-3 space-y-3" id="feed">
+    </main>
+  </div>
+</div>
+
+<script>
+let BACKEND_URL = localStorage.getItem('backend_url') || '';
+let currentFilter = 'ALL';
+const mockReplies = [
+  {id:'1', username:'sarah.codes', text:'Love this breakdown! How did you build the voice clone?', type:'QUESTION', likes:12, draftWitty:'Thanks Sarah! Learned it from your posts actually 🙏 What part should I break down next?', draftHelpful:'Appreciate it! I used past 100 replies + OpenAI. Happy to share prompt.', draftQuestion:'Thanks! Which part — the tone learning or the safety gate?'},
+  {id:'2', username:'crypto_king_99', text:'DM ME FOR FAST PROMO CHECK MY PROFILE!!!', type:'SPAM', likes:0, draftWitty:'HIDE', draftHelpful:'HIDE', draftQuestion:'HIDE'},
+  {id:'3', username:'brand_lagos', text:'We want to collab on Threads management tool. DM us?', type:'BUYER', likes:3, draftWitty:'Love that! Just DMed you — lets talk collab 🙏', draftHelpful:'Thanks for reaching out! Sending DM now with details.', draftQuestion:'Exciting! What kind of collab did you have in mind?'},
+  {id:'4', username:'tunde_fan', text:'Bro this saved me 2 hours today fr', type:'FAN', likes:5, draftWitty:'Lets gooo! 2 hours back is the goal 🚀', draftHelpful:'So glad it helped! More updates coming.', draftQuestion:'No way! What was eating your time before?'},
+  {id:'5', username:'onlyfans_spam', text:'Check my link in bio hot pics', type:'SPAM', likes:0, draftWitty:'HIDE', draftHelpful:'HIDE', draftQuestion:'HIDE'},
+  {id:'6', username:'startup_abuja', text:'How much is Pro? Link please', type:'BUYER', likes:2, draftWitty:'Pro is $19/mo — check your DMs, sent link! 🙏', draftHelpful:'$19/mo for 2 accounts. DMing you link now.', draftQuestion:'Want Threads only or IG + Threads bundle?'},
+];
+
+function render(){
+  const feed = document.getElementById('feed');
+  feed.innerHTML = '';
+  const filtered = currentFilter==='ALL' ? mockReplies : mockReplies.filter(r=>r.type===currentFilter);
+  document.getElementById('c-all').innerText = mockReplies.length;
+  document.getElementById('bouncer-count').innerText = mockReplies.filter(r=>r.type==='SPAM').length + 29;
+  
+  filtered.forEach(r=>{
+    const isSpam = r.type==='SPAM';
+    const card = document.createElement('div');
+    card.className = `p-4 rounded border ${isSpam ? 'bg-red-950/20 border-red-900/30' : 'bg-zinc-900 border-zinc-800'}`;
+    card.innerHTML = `
+      <div class="flex justify-between">
+        <div><span class="font-bold text-sm">@${r.username}</span> <span class="text-xs px-2 py-0.5 rounded ${r.type==='SPAM'?'bg-red-900 text-red-300': r.type==='BUYER'?'bg-green-900 text-green-300':'bg-zinc-800 text-zinc-300'}">${r.type}</span></div>
+        <span class="text-xs text-zinc-500">${r.likes} likes</span>
+      </div>
+      <p class="text-sm mt-2 text-zinc-200">"${r.text}"</p>
+      ${!isSpam ? `
+      <div class="mt-3 space-y-2">
+        <p class="text-[10px] text-zinc-500 uppercase">AI drafts (94% voice match)</p>
+        <button onclick="postReply('${r.id}', '${r.draftWitty.replace(/'/g,"'")}')" class="w-full text-left text-xs p-2 bg-zinc-800 hover:bg-zinc-700 rounded"><b>Witty:</b> ${r.draftWitty}</button>
+        <button onclick="postReply('${r.id}', '${r.draftHelpful.replace(/'/g,"'")}')" class="w-full text-left text-xs p-2 bg-zinc-800 hover:bg-zinc-700 rounded"><b>Helpful:</b> ${r.draftHelpful}</button>
+        <button onclick="postReply('${r.id}', '${r.draftQuestion.replace(/'/g,"'")}')" class="w-full text-left text-xs p-2 bg-zinc-800 hover:bg-zinc-700 rounded"><b>Question:</b> ${r.draftQuestion}</button>
+        <div class="flex gap-2 mt-2">
+          <button onclick="hideReply('${r.id}')" class="text-xs bg-red-900/50 text-red-300 px-3 py-1 rounded">Hide</button>
+          <button onclick="postReply('${r.id}', '${r.draftWitty.replace(/'/g,"'")}')" class="text-xs bg-white text-black px-3 py-1 rounded">Approve & Post</button>
+        </div>
+      </div>` : `<div class="mt-2 text-xs text-red-300">Auto-hidden by Bouncer</div>`}
+    `;
+    feed.appendChild(card);
+  });
+}
+
+function filterType(t){ currentFilter=t; render(); }
+function hideReply(id){ alert('In real app: POST /api/hide/'+id+' with hide=true -> hides on Threads'); }
+function postReply(id, text){
+  if(!BACKEND_URL){ alert('Set Backend URL first (top right) - paste your Render URL'); return; }
+  alert('Would post to Threads: '+text+'\n\nBackend: '+BACKEND_URL+'/api/reply');
+}
+
+document.getElementById('backendBtn').onclick = () => {
+  const url = prompt('Paste your Render backend URL (e.g. https://replypilot.onrender.com):', BACKEND_URL);
+  if(url){ localStorage.setItem('backend_url', url); BACKEND_URL=url; alert('Saved! Now Approve & Post will use real API'); }
+};
+
+render();
+</script>
+</body>
+</html>
